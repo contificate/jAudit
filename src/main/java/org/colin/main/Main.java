@@ -48,6 +48,6 @@ public class Main {
         // selectLocale();
 
         // queue MainWindow's creation in AWT event queue
-        SwingUtilities.invokeLater(() -> new MainWindow());
+        SwingUtilities.invokeLater(MainWindow::new);
     }
 }

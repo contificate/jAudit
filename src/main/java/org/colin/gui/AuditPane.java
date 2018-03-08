@@ -1,16 +1,21 @@
 package org.colin.gui;
 
 import com.alee.extended.window.WebProgressDialog;
-import com.alee.laf.toolbar.WebToolBar;
-import com.alee.utils.ThreadUtils;
-import com.github.javaparser.*;
+import com.github.javaparser.JavaParser;
+import com.github.javaparser.ParseProblemException;
+import com.github.javaparser.Range;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
+import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.stmt.BlockStmt;
+import org.colin.gui.graph.GraphView;
 import org.colin.main.Main;
 import org.colin.res.IconLoader;
+import org.colin.util.ColourUtil;
 import org.colin.visitors.MethodTreeVisitor;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
+import org.fife.ui.rsyntaxtextarea.Theme;
 import org.fife.ui.rtextarea.Gutter;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
@@ -18,18 +23,24 @@ import javax.swing.*;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultHighlighter;
+import javax.swing.text.Highlighter;
 import javax.swing.tree.DefaultTreeModel;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.io.*;
-import java.util.Optional;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.ResourceBundle;
+import java.util.Stack;
 
-import static org.colin.res.IconNames.*;
+import static org.colin.res.IconNames.ANNOTATION_ICON;
+import static org.colin.res.IconNames.AST_DEPTH_ICON;
+import static org.colin.res.IconNames.CLASS_ICON;
 
 public class AuditPane extends JPanel implements TreeSelectionListener {
-
-    private WebToolBar toolBar;
     private JTree methodTree;
     private DefaultTreeModel treeModel;
     private RSyntaxTextArea ta;
@@ -40,6 +51,11 @@ public class AuditPane extends JPanel implements TreeSelectionListener {
     private WebProgressDialog progressDialog;
 
     private ResourceBundle rb = ResourceBundle.getBundle(getClass().getSimpleName(), Main.locale);
+
+    // FIX
+    private JTabbedPane toolTabs;
+    private GraphView graphView;
+    // FIX
 
     private class ParserWorker extends SwingWorker<Boolean, Void> {
         @Override
@@ -68,78 +84,91 @@ public class AuditPane extends JPanel implements TreeSelectionListener {
         @Override
         public void actionPerformed(ActionEvent actionEvent) {
 
+            final int beginOffset = ta.getSelectionStart(), endOffset = ta.getSelectionEnd();
             try {
-                FileWriter writer = new FileWriter("/home/dosto/report.html");
+                // get line offsets
+                final int beginLine = ta.getLineOfOffset(beginOffset),
+                        endLine = ta.getLineOfOffset(endOffset);
 
-                for(Node n : unit.getChildNodes().get(unit.getChildNodes().size() - 1).getChildNodes()) {
-                    Range range = n.getRange().orElse(null);
-                    if(range != null) {
-                        String start = (range.begin.line + ", " + range.begin.column);
-                        String end = (range.begin.line + ", " + range.begin.column);
-                        writer.write("<h2>" + start + " -> " + end + "</h2>");
-                        writer.write(n.toString());
-                        writer.write("<hr />");
-                    }
-                }
+                // work out selection columns
+                final int startLineOffset = ta.getLineStartOffset(beginLine);
+                final int beginColumn = (beginOffset - startLineOffset),
+                        endColumn = (endOffset - startLineOffset);
 
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+                // create selection range
+                final Range selectionRange = Range.range((beginLine + 1), beginColumn, (endLine + 1), endColumn);
 
-            /*
-            final int start = ta.getSelectionStart(), end = ta.getSelectionEnd();
+                // selectively depth-first search AST
+                final Node rootNode = unit.getParentNodeForChildren();
 
-            System.out.println(start + " : " + end);
+                ArrayList<Object> trace = new ArrayList<>();
 
+                Stack<Node> toVisit = new Stack<>();
+                toVisit.push(rootNode);
 
-            try {
-                Range meme = Range.range(ta.getLineOfOffset(start) - 1, 0, ta.getLineOfOffset(end) + 1, 0);
+                while(!(toVisit.empty())) {
+                    final Node node = toVisit.pop();
+                    final Range nodeRange = node.getRange().orElse(Range.range(0, 0, 0, 0));
 
-                System.out.println(ta.getLineOfOffset(start) + 1);
+                    if(nodeRange.contains(selectionRange)) {
+                        String nodeType = node.getClass().toString();
+                        nodeType = nodeType.substring(nodeType.lastIndexOf(".") + 1);
+                        System.out.println(node.getClass().toString());
+                        trace.add(nodeType);
 
-                for(Node n : unit.getChildNodes()) {
-                    System.out.println("trying");
-                    Optional<Range> nodeRange = n.getRange();
-                    Range range = nodeRange.orElse(null);
-                    if(range != null) {
-                        if(range.contains(meme) || meme.contains(range)) {
-                            System.err.println(n.toString());
+                        for(final Node child : node.getChildNodes()) {
+                            toVisit.push(child);
                         }
-                    } else System.out.println("range null");
+                    }
+
                 }
 
+
+                graphView.drawElements(trace);
+                SwingUtilities.invokeLater(() -> graphView.repaint());
             } catch (BadLocationException e) {
                 e.printStackTrace();
-            }*/
+            }
         }
     }
 
     public AuditPane(File sourceFile) {
         super(new BorderLayout());
 
-        initComponents();
-        initRenderers();
-        initAuditMenu();
-
         // read source file
         workingFile = sourceFile;
+
+        System.out.println(sourceFile.getName());
+
+        initComponents();
+        initRenderers();
         readFile(workingFile);
-
-
-        ClassMethodNode rootNode = new ClassMethodNode(ClassMethodNode.Type.CLASS, "Unknown", Range.range(0, 0, 0, 0));
+        initAuditMenu();
+/*
         String fileName = workingFile.getName();
         String className = fileName.substring(0, fileName.lastIndexOf("."));
-        rootNode.setName(className);
-        treeModel.setRoot(rootNode);
+        treeModel.setRoot(new ClassTreeNode(className));
+*/
 
-
-        progressDialog = new WebProgressDialog(null, "");
+        progressDialog = new WebProgressDialog((JFrame)SwingUtilities.getRoot(this), "");
         progressDialog.setText(rb.getString("parsing_file"));
         progressDialog.setIndeterminate(true);
         progressDialog.getProgressBar().setStringPainted(true);
         progressDialog.getProgressBar().setString(rb.getString("parsing"));
         progressDialog.setVisible(true);
 
+        /*
+        Highlighter highlighter = ta.getHighlighter();
+        Highlighter.HighlightPainter painter =
+                new DefaultHighlighter.DefaultHighlightPainter(Color.pink);
+
+        try {
+            ta.getHighlighter().addHighlight(56, 78, painter);
+        } catch (BadLocationException e) {
+            e.printStackTrace();
+        }*/
+
+        // parse source file
         new ParserWorker().execute();
     }
 
@@ -151,37 +180,39 @@ public class AuditPane extends JPanel implements TreeSelectionListener {
         }
     }
 
-    public static Color hex2Rgb(String colorStr) {
-        return new Color(
-                Integer.valueOf(colorStr.substring(1, 3), 16),
-                Integer.valueOf(colorStr.substring(3, 5), 16),
-                Integer.valueOf(colorStr.substring(5, 7), 16));
-    }
-
     private void initComponents() {
-        toolBar = new WebToolBar();
+        // assume class name from file name
+        final String fileName = workingFile.getName();
+        String className = fileName.substring(0, fileName.lastIndexOf("."));
 
-        treeModel = new DefaultTreeModel(new ClassMethodNode(ClassMethodNode.Type.CLASS, "", Range.range(0, 0, 0, 0)));
+        treeModel = new DefaultTreeModel(new ClassTreeNode(className));
+
         methodTree = new JTree();
         methodTree.setModel(treeModel);
         methodTree.addTreeSelectionListener(this);
 
         ta = new RSyntaxTextArea();
-        ta.setFont(new Font("Hack", Font.PLAIN, 12)); // TODO: load font resource
         ta.setAntiAliasingEnabled(true);
-
+        ta.setRoundedSelectionEdges(true);
+        ta.setEditable(false);
         ta.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
+
+        try {
+            Font font = Font.createFont(Font.TRUETYPE_FONT, getClass().getResourceAsStream("/Hack.ttf")).deriveFont(12f);
+            ta.setFont(font);
+            methodTree.setFont(font);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, e.getMessage());
+        }
 
         RTextScrollPane sp = new RTextScrollPane(ta);
 
         Gutter gutter = sp.getGutter();
         gutter.setBookmarkIcon(IconLoader.loadIcon(ANNOTATION_ICON));
         gutter.setBookmarkingEnabled(true);
-        gutter.setToolTipText("Juden");
-        gutter.setBackground(hex2Rgb("#f9f9f9"));
+        gutter.setBackground(ColourUtil.fromHex("#f9f9f9"));
 
-
-        /*
+/*
         Theme theme;
         try {
             theme = Theme.load(getClass().getResourceAsStream(
@@ -199,11 +230,15 @@ public class AuditPane extends JPanel implements TreeSelectionListener {
             e.printStackTrace();
         }*/
 
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JScrollPane(methodTree), sp);
+        toolTabs = new JTabbedPane();
+        toolTabs.addTab(rb.getString("ast_depth"), IconLoader.loadIcon(AST_DEPTH_ICON), graphView = new GraphView());
+        toolTabs.addTab("Blacks", IconLoader.loadIcon(CLASS_ICON), new JTable());
+        JSplitPane horizonal = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp, toolTabs);
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JScrollPane(methodTree), horizonal);
+
+        horizonal.setDividerLocation(0.8d);
+        horizonal.setResizeWeight(0.8d);
         splitPane.setDividerLocation(200);
-
-
-        //sadd(toolBar, BorderLayout.PAGE_START);
 
         add(splitPane, BorderLayout.CENTER);
     }
@@ -214,7 +249,6 @@ public class AuditPane extends JPanel implements TreeSelectionListener {
 
     private void initAuditMenu() {
         JPopupMenu auditMenu = new JPopupMenu();
-        auditMenu.add("Create audit");
         auditMenu.add(new AuditAction());
         auditMenu.addSeparator();
         auditMenu.add("Run visitor...");
@@ -222,13 +256,15 @@ public class AuditPane extends JPanel implements TreeSelectionListener {
         methodTree.setComponentPopupMenu(auditMenu);
     }
 
-    private boolean initCompilationUnit() {
-
+    private synchronized boolean initCompilationUnit() {
         try {
             unit = JavaParser.parse(workingFile);
         } catch (FileNotFoundException e) {
             JFrame parent = (JFrame) SwingUtilities.getRoot(this);
             JOptionPane.showMessageDialog(parent, "Problem parsing file!", "Parser error", JOptionPane.ERROR_MESSAGE);
+            return false;
+        } catch (ParseProblemException ex) {
+            JOptionPane.showMessageDialog(null, ex.getMessage());
             return false;
         }
 
@@ -236,54 +272,49 @@ public class AuditPane extends JPanel implements TreeSelectionListener {
     }
 
     private void initTree() {
-        ClassMethodNode root = (ClassMethodNode) treeModel.getRoot();
+        // get root node for adding leaves (methods)
+        ClassTreeNode root = (ClassTreeNode) treeModel.getRoot();
 
         // viist methods and append to root node
         new MethodTreeVisitor().visit(unit, root);
 
         // make top-level parent nodes' children visible
         expandTopLevelNodes(methodTree);
-
-        // TEST
-
-        TokenRange range = (unit.getTokenRange().isPresent() ? unit.getTokenRange().get() : null);
-        if(range != null) {
-            for(JavaToken meme : range) {
-                if(!TokenTypes.isWhitespace(meme.getKind())) {
-                    System.out.println(meme.getText());
-                    System.out.println(meme.getKind());
-                }
-            }
-        }
-
-
-
-        // TEST
     }
 
     /**
      * Expand top-level JTree nodes
+     *
      * @param tree tree being expanded
      */
     private void expandTopLevelNodes(JTree tree) {
-       for(int i = 0; i < tree.getRowCount(); i++)
-           tree.expandRow(i);
+        for (int i = 0; i < tree.getRowCount(); i++)
+            tree.expandRow(i);
     }
 
     @Override
     public void valueChanged(TreeSelectionEvent e) {
-        // get selected node
-        ClassMethodNode node = (ClassMethodNode)
+        final Object node =
                 methodTree.getLastSelectedPathComponent();
 
         if (node == null) return;
 
-        // try jump to line that node represents
-        try {
-            ta.setCaretPosition(ta.getLineStartOffset(node.getStartLine() - 1));
-        } catch (BadLocationException ex) {
-            ex.printStackTrace();
+        if (node instanceof MethodTreeNode) {
+            final MethodTreeNode method = (MethodTreeNode) node;
+
+            // TODO:
+            final MethodDeclaration methodDecl = method.getNode();
+            final BlockStmt block = methodDecl.getBody().orElse(null);
+
+
+            // try jump to line that node represents
+            try {
+                ta.setCaretPosition(ta.getLineStartOffset(method.getStartLine() - 1));
+            } catch (BadLocationException ex) {
+                ex.printStackTrace();
+            }
         }
+
     }
 
 }

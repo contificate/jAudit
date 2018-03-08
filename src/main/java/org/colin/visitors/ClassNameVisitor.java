@@ -1,15 +1,17 @@
 package org.colin.visitors;
 
-import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import com.github.javaparser.ast.stmt.LocalClassDeclarationStmt;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
-import org.colin.gui.ClassMethodNode;
 
-public class ClassNameVisitor extends VoidVisitorAdapter<ClassMethodNode> {
+public class ClassNameVisitor extends VoidVisitorAdapter<String> {
     @Override
-    public void visit(ClassOrInterfaceType classDecl, ClassMethodNode name) {
+    public void visit(LocalClassDeclarationStmt classDecl, String name) {
         super.visit(classDecl, name);
-        System.out.println("Debug");
+
+        name = classDecl.getClassDeclaration().getNameAsString();
+        System.out.println(classDecl.getClassDeclaration().getName());
     }
+
+
 
 }

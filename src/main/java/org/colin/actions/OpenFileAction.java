@@ -11,7 +11,7 @@ import static org.colin.res.IconNames.*;
 
 public class OpenFileAction extends AbstractAction {
 
-    protected FileReceiver parent;
+    private FileReceiver parent;
 
     public OpenFileAction(FileReceiver parent) {
         super("Open file(s)", IconLoader.loadIcon(JAVA_FILE_ICON));
@@ -28,7 +28,7 @@ public class OpenFileAction extends AbstractAction {
         chooser.setMultiSelectionEnabled(true);
 
         // TODO
-        chooser.setCurrentDirectory(new File("/home/dosto/tests"));
+        // chooser.setCurrentDirectory(new File("/home/dosto/tests"));
         //
 
         FileNameExtensionFilter filter = new FileNameExtensionFilter(

@@ -40,7 +40,7 @@ public class MainWindow extends JFrame implements FileReceiver, Closeable {
         setVisible(true);
 
         // TEST
-        // receiveFile(new File("/home/dosto/CompileDriver.java"), FileIntent.OPEN);
+        //receiveFile(new File("/home/dosto/CompileDriver.java"), FileIntent.OPEN);
     }
 
     private void initMenu() {
@@ -54,9 +54,8 @@ public class MainWindow extends JFrame implements FileReceiver, Closeable {
 
 
         JMenu loadMenu = new WebMenu(rb.getString("open_from"), IconLoader.loadIcon(DOWNLOAD_ICON));
-        // add options
+        // TOOD: add options
         fileMenu.add(loadMenu);
-
 
         fileMenu.addSeparator();
 
@@ -68,14 +67,12 @@ public class MainWindow extends JFrame implements FileReceiver, Closeable {
         WebMenu toolMenu = new WebMenu(rb.getString("tools"), IconLoader.loadIcon(TOOLS_ICON));
 
         menuBar.add(toolMenu);
-
         setJMenuBar(menuBar);
     }
 
     private void initComponents() {
         layout = new JPanel(new BorderLayout());
         tabPane = new JTabbedPane();
-
         layout.add(tabPane, BorderLayout.CENTER);
         add(layout);
     }
@@ -89,7 +86,6 @@ public class MainWindow extends JFrame implements FileReceiver, Closeable {
                     Component comp = tabPane.getComponentAt(i);
                     if (comp instanceof AuditPane) {
                         // TODO: issue closing signal
-
                     }
                 }
             }

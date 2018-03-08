@@ -8,20 +8,18 @@ import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.stmt.IfStmt;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import org.colin.gui.ClassMethodNode;
+import org.colin.gui.ClassTreeNode;
+import org.colin.gui.MethodTreeNode;
 
 import javax.swing.*;
 import java.util.Optional;
 
-public class MethodTreeVisitor extends VoidVisitorAdapter<ClassMethodNode> {
+public class MethodTreeVisitor extends VoidVisitorAdapter<ClassTreeNode> {
 
     @Override
-    public void visit(MethodDeclaration methodDecl, ClassMethodNode root) {
+    public void visit(MethodDeclaration methodDecl, ClassTreeNode root) {
         super.visit(methodDecl, root);
-        final String name = methodDecl.getNameAsString();
-
-        final Range range = methodDecl.getRange().orElse(Range.range(0, 0, 0, 0));
-
-        root.add(new ClassMethodNode(ClassMethodNode.Type.METHOD, name, range));
+        root.add(new MethodTreeNode(methodDecl));
     }
 
 }
