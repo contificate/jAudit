@@ -6,7 +6,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 
-public class GraphView extends JPanel {
+public class GraphView<T extends GraphDrawable> extends JPanel {
 
     private GraphCanvas canvas;
     private JScrollPane scrollPane;
@@ -20,11 +20,15 @@ public class GraphView extends JPanel {
         setAutoscrolls(true);
     }
 
-    public void drawElements(final ArrayList<Object> objects) {
-        canvas.drawElements(objects);
+
+    public void setVertices(ArrayList<T> vertices) {
+        canvas.setVertices(vertices);
         SwingUtilities.invokeLater(() -> {
             scrollPane.revalidate(); // recalculate scrollbar bounds
             scrollPane.repaint(); // repaint
+            scrollPane.revalidate();
+            scrollPane.validate();
+            canvas.revalidate();
         });
     }
 
@@ -39,13 +43,19 @@ public class GraphView extends JPanel {
             }
 
             @Override
+            public void mouseClicked(MouseEvent mouseEvent) {
+                final Point clickPoint = mouseEvent.getPoint();
+                // TODO: functionality?
+            }
+
+            @Override
             public void mouseDragged(MouseEvent mouseEvent) {
                 super.mouseDragged(mouseEvent);
                 if (origin != null) {
-                    final JViewport viewPort = (JViewport) SwingUtilities.getAncestorOfClass(JViewport.class, canvas);
+                    final JViewport viewPort = scrollPane.getViewport();
                     if (viewPort != null) {
                         Rectangle rect = viewPort.getViewRect();
-                        rect.x += (origin.x - mouseEvent.getY());
+                        rect.x += (origin.x - mouseEvent.getX());
                         rect.y += (origin.y - mouseEvent.getY());
 
                         canvas.scrollRectToVisible(rect);

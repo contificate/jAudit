@@ -1,73 +1,82 @@
 package org.colin.gui.graph;
 
+import com.github.javaparser.ast.expr.SimpleName;
+import org.colin.util.ColourUtil;
+
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 
-public class GraphCanvas extends JPanel{
+public class GraphCanvas<T extends GraphDrawable> extends JPanel {
+    private ArrayList<T> vertices = new ArrayList<>();
 
-    private ArrayList<Object> nodes = new ArrayList<>();
+    private static final int PADDING = 30;
     private static final int PADDING_WIDTH = 20;
     private static final int PADDING_HEIGHT = 30;
-    private int lastX = 0;
+
+    private int prevX = 0;
 
     public GraphCanvas() {
+        setDoubleBuffered(true);
         setAutoscrolls(true);
     }
 
-    public void drawElements(ArrayList<Object> elements) {
-        lastX = 0;
-        nodes = elements;
+    public void setVertices(ArrayList<T> vertices) {
+        prevX = 0;
+        this.vertices = vertices;
+    }
+
+    private void drawHorizontalArrow(Graphics2D g, int x, int x1, int y) {
+        g.setStroke(new BasicStroke(2));
+        g.drawLine(x + 1, y, x + 30, y);
+        g.drawLine((x + 20), y - 5, x + 30, y);
+        g.drawLine((x + 20), y + 5, x + 30, y);
     }
 
     @Override
     public void paint(Graphics g) {
         super.paintComponent(g);
+
+        // get 2d graphics context
         Graphics2D graphics = (Graphics2D) g;
+
+        // enable anti aliasing for shapes and text
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
                 RenderingHints.VALUE_ANTIALIAS_ON);
-
         graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
                 RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-        graphics.setBackground(Color.WHITE);
+        // begin offset from padding
+        int x = PADDING;
 
-        int x = 0;
-        final int len = nodes.size();
+        // iterate over vertices, pass graphics context to let them draw themselves
+        int len = vertices.size();
         for(int i = 0; i < len; i++) {
-            final String text = nodes.get(i).toString();
-            final FontMetrics fm = graphics.getFontMetrics();
-            final int textWidth = fm.stringWidth(text),
-                    textHeight = fm.getHeight();
+            // get drawable vertex
+            GraphDrawable vertex = vertices.get(i);
 
-            int rectWidth = (textWidth + PADDING_WIDTH);
-            int rectHeight = (textHeight + PADDING_HEIGHT);
+            // draw
+            vertex.draw(graphics, x, 40);
 
-            graphics.setStroke(new BasicStroke(3));
-            graphics.drawRect(30 + x, 60, rectWidth, rectHeight);
-            graphics.setColor(Color.WHITE);
-            graphics.fillRect(30 + x, 60, rectWidth, rectHeight);
-            graphics.setColor(Color.BLACK);
+            // add vertex width to
+            x += vertex.getWidth(graphics);
 
-            graphics.drawString(text, (30 + x) + (rectWidth - textWidth) / 2, 60 + ((rectHeight + PADDING_HEIGHT) - textHeight) / 2);
+            int lineY = 77;
 
-            x += (30 + rectWidth);
+            if(i < (len - 1))
+                drawHorizontalArrow(graphics, x, (x += PADDING), lineY);
 
-            if(i < (len - 1)) {
-                graphics.setStroke(new BasicStroke(2));
-                int lineY = 60 + (rectHeight / 2);
-                graphics.drawLine(x + 1, lineY, x + 30, lineY);
-                graphics.drawLine((x + 20), lineY - 5, x + 30, lineY);
-                graphics.drawLine((x + 20), lineY + 5, x + 30, lineY);
-            }
-            lastX = x;
+            if(i == (len - 1))
+                vertex.setBackground(ColourUtil.fromHex("#dddddd"));
+
+            prevX = (x + PADDING);
         }
 
     }
 
     @Override
     public Dimension getPreferredSize() {
-        return new Dimension(lastX + 30, 150);
+        return new Dimension(prevX + PADDING, 150);
     }
 
 }

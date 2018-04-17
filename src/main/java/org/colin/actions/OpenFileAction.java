@@ -1,5 +1,6 @@
 package org.colin.actions;
 
+import com.sun.istack.internal.NotNull;
 import org.colin.res.IconLoader;
 
 import javax.swing.*;
@@ -18,6 +19,10 @@ public class OpenFileAction extends AbstractAction {
         this.parent = parent;
     }
 
+    public void setFileReceiver(@NotNull FileReceiver receiver) {
+        parent = receiver;
+    }
+
     @Override
     public void actionPerformed(ActionEvent actionEvent) {
         JFrame frame = null;
@@ -27,18 +32,18 @@ public class OpenFileAction extends AbstractAction {
         JFileChooser chooser = new JFileChooser();
         chooser.setMultiSelectionEnabled(true);
 
-        // TODO
-        // chooser.setCurrentDirectory(new File("/home/dosto/tests"));
+        // TODO remove
+        chooser.setCurrentDirectory(new File("/home/dosto/tests"));
         //
 
         FileNameExtensionFilter filter = new FileNameExtensionFilter(
                 "Java source files", "java");
         chooser.setFileFilter(filter);
 
-        if (chooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
-            for (final File file : chooser.getSelectedFiles()) {
+        if ((chooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION)
+                && (parent != null)) {
+            for (final File file : chooser.getSelectedFiles())
                 parent.receiveFile(file, FileIntent.OPEN);
-            }
         }
     }
 }

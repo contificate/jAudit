@@ -2,6 +2,8 @@ package org.colin.main;
 
 import com.alee.laf.WebLookAndFeel;
 import org.colin.gui.MainWindow;
+import org.colin.gui.controllers.MainController;
+import org.colin.gui.views.MainView;
 
 import javax.swing.*;
 import java.util.Locale;
@@ -48,6 +50,9 @@ public class Main {
         // selectLocale();
 
         // queue MainWindow's creation in AWT event queue
-        SwingUtilities.invokeLater(MainWindow::new);
+        SwingUtilities.invokeLater(() -> {
+            MainView view = new MainView();
+            MainController controller = new MainController(view);
+        });
     }
 }

@@ -1,63 +1,58 @@
-package org.colin.gui;
+package org.colin.gui.views;
 
 import com.alee.extended.statusbar.WebMemoryBar;
 import com.alee.extended.statusbar.WebStatusBar;
 import com.alee.laf.menu.WebMenu;
 import com.alee.laf.menu.WebMenuBar;
-import org.colin.actions.*;
-import org.colin.gui.controllers.AuditController;
-import org.colin.gui.models.AuditModel;
-import org.colin.gui.views.AuditView;
+import com.sun.istack.internal.NotNull;
+import org.colin.actions.CloseAction;
+import org.colin.actions.FileReceiver;
+import org.colin.actions.OpenFileAction;
 import org.colin.main.Main;
 import org.colin.res.IconLoader;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.io.File;
 import java.util.ResourceBundle;
 
 import static org.colin.res.IconNames.*;
 
-public class MainWindow extends JFrame implements FileReceiver, Closeable {
+public class MainView extends JFrame {
 
     private JPanel layout;
     private WebMenuBar menuBar;
     private JTabbedPane tabPane;
     private WebStatusBar statusBar;
 
+    private OpenFileAction openFileAction;
+
     private ResourceBundle rb = ResourceBundle.getBundle(getClass().getSimpleName(), Main.locale);
 
-    public MainWindow() {
+    public MainView() {
         super("jAudit");
         setSize(500, 400);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
         initMenu();
         initComponents();
         initStatusBar();
-        initListeners();
+        //initListeners();
 
         setVisible(true);
-
-        // TEST
-       //  receiveFile(new File("/home/dosto/CompileDriver.java"), FileIntent.OPEN);
     }
 
     private void initMenu() {
+
         menuBar = new WebMenuBar();
 
         WebMenu fileMenu = new WebMenu(rb.getString("file"), IconLoader.loadIcon(FILE_ICON));
 
-        OpenFileAction open = new OpenFileAction(this);
-        open.putValue("Name", rb.getString("open"));
-        fileMenu.add(open);
-
+        openFileAction = new OpenFileAction(null);
+        openFileAction.putValue("Name", rb.getString("open"));
+        fileMenu.add(openFileAction);
 
         JMenu loadMenu = new WebMenu(rb.getString("open_from"), IconLoader.loadIcon(DOWNLOAD_ICON));
-        // TOOD: add options
         fileMenu.add(loadMenu);
 
         fileMenu.addSeparator();
@@ -71,8 +66,13 @@ public class MainWindow extends JFrame implements FileReceiver, Closeable {
 
         menuBar.add(toolMenu);
         setJMenuBar(menuBar);
+
+
     }
 
+    /**
+     * Initialise layout
+     */
     private void initComponents() {
         layout = new JPanel(new BorderLayout());
         tabPane = new JTabbedPane();
@@ -81,23 +81,8 @@ public class MainWindow extends JFrame implements FileReceiver, Closeable {
         add(layout);
     }
 
-    private void initListeners() {
-        addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent windowEvent) {
-                final int tabCount = tabPane.getTabCount();
-                for (int i = 0; i < tabCount; i++) {
-                    Component comp = tabPane.getComponentAt(i);
-                    if (comp instanceof AuditView) {
-                        // TODO: issue closing signal
-                    }
-                }
-            }
-        });
-    }
-
     /**
-     * Initialise status bar which shows JVM memory usage
+     * Create status bar to show JVM memory usage
      */
     private void initStatusBar() {
         statusBar = new WebStatusBar();
@@ -110,23 +95,15 @@ public class MainWindow extends JFrame implements FileReceiver, Closeable {
         layout.add(statusBar, BorderLayout.PAGE_END);
     }
 
-    @Override
-    public void receiveFile(File file, FileIntent intent) {
-        switch (intent) {
-            case OPEN: {
-                AuditModel model = new AuditModel(file);
-                AuditView view = new AuditView(model);
-                AuditController controller = new AuditController(model, view);
-                tabPane.addTab(file.getName(), IconLoader.loadIcon(JAVA_FILE_ICON), view);
-                tabPane.setSelectedIndex(tabPane.getTabCount() - 1);
-                break;
-            }
-        }
+    public void setFileReceiver(@NotNull FileReceiver receiver) {
+        openFileAction.setFileReceiver(receiver);
     }
 
-    @Override
-    public void closeRequested() {
-
+    public void addAuditTab(String title, AuditView view) {
+        tabPane.addTab(title, IconLoader.loadIcon(JAVA_FILE_ICON), view);
     }
 
+    public void focusLastTab() {
+        tabPane.setSelectedIndex(tabPane.getTabCount() - 1);
+    }
 }

@@ -1,10 +1,12 @@
 package org.colin.res;
 
-import javax.swing.*;
+import javax.swing.ImageIcon;
 import java.util.HashMap;
 
+/**
+ * Icon loader that caches already-loaded icons into an efficient hash-map
+ */
 public class IconLoader {
-
     /**
      * HashMap of loaded icons (loaded once used)
      */
@@ -16,12 +18,14 @@ public class IconLoader {
      * @return (possibly cached) icon
      */
     public static ImageIcon loadIcon(String name) {
+        // try to load icon from hash-ap
         ImageIcon icon;
-        if((icon = icons.get(name)) == null) {
-            icon = new ImageIcon(IconLoader.class.getResource("/" + name));
-            icons.put(name, icon);
+        if((icon = icons.get(name)) == null) { // if icon not in hash-map,
+            icon = new ImageIcon(IconLoader.class.getResource("/" + name)); // load the icon
+            icons.put(name, icon); // insert into hash-map
         }
 
+        // return icon
         return icon;
     }
 
