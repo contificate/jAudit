@@ -28,9 +28,9 @@ public class GraphCanvas<T extends GraphDrawable> extends JPanel {
 
     private void drawHorizontalArrow(Graphics2D g, int x, int x1, int y) {
         g.setStroke(new BasicStroke(2));
-        g.drawLine(x + 1, y, x + 30, y);
-        g.drawLine((x + 20), y - 5, x + 30, y);
-        g.drawLine((x + 20), y + 5, x + 30, y);
+        g.drawLine(x + 1, y, x + PADDING, y);
+        g.drawLine((x + PADDING_WIDTH), (y - 5), (x + PADDING), y);
+        g.drawLine((x + PADDING_WIDTH), (y + 5), (x + PADDING), y);
     }
 
     @Override
@@ -51,7 +51,7 @@ public class GraphCanvas<T extends GraphDrawable> extends JPanel {
 
         // iterate over vertices, pass graphics context to let them draw themselves
         int len = vertices.size();
-        for(int i = 0; i < len; i++) {
+        for (int i = 0; i < len; i++) {
             // get drawable vertex
             GraphDrawable vertex = vertices.get(i);
 
@@ -63,10 +63,10 @@ public class GraphCanvas<T extends GraphDrawable> extends JPanel {
 
             int lineY = 77;
 
-            if(i < (len - 1))
+            if (i < (len - 1))
                 drawHorizontalArrow(graphics, x, (x += PADDING), lineY);
 
-            if(i == (len - 1))
+            if (i == (len - 1))
                 vertex.setBackground(ColourUtil.fromHex("#dddddd"));
 
             prevX = (x + PADDING);

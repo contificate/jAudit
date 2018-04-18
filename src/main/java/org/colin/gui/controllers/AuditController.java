@@ -4,6 +4,7 @@ import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseProblemException;
 import com.github.javaparser.Range;
 import com.github.javaparser.ast.Node;
+import org.colin.audit.AuditContext;
 import org.colin.gui.ClassTreeNode;
 import org.colin.gui.ClassTreeRenderer;
 import org.colin.gui.MethodTreeNode;
@@ -23,11 +24,12 @@ import javax.swing.text.BadLocationException;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreeSelectionModel;
 import java.awt.event.ActionEvent;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
 import java.util.ArrayList;
 import java.util.Stack;
+import java.util.zip.CRC32;
 
 public class AuditController implements TreeSelectionListener {
 
@@ -121,7 +123,10 @@ public class AuditController implements TreeSelectionListener {
                 final Node rootNode = model.getUnit().getParentNodeForChildren();
 
                 // TODO: delegate to private member for context for cloneable back-propagation
+
                 ArrayList<GraphDrawable> trace = new ArrayList<>();
+
+                AuditContext contextTrace = new AuditContext();
 
                 // AST traversal stack
                 Stack<Node> toVisit = new Stack<>();
@@ -136,8 +141,7 @@ public class AuditController implements TreeSelectionListener {
                         // TODO: remove debug
                         System.out.println(node.getClass().toString());
 
-                        trace.add(new DrawableNode(node));
-
+           
                         for(final Node child : node.getChildNodes()) {
                             toVisit.push(child);
                         }
@@ -147,7 +151,7 @@ public class AuditController implements TreeSelectionListener {
 
                 GraphView graphView = view.getGraphView();
                 graphView.setVertices(trace);
-                SwingUtilities.invokeLater(() -> graphView.repaint());
+                SwingUtilities.invokeLater(graphView::repaint);
 
             } catch (BadLocationException e) {
                 e.printStackTrace();
@@ -195,8 +199,23 @@ public class AuditController implements TreeSelectionListener {
         view.getProgressDialog().setVisible(visible);
     }
 
+    // TODO: crc32
     private void readFile() {
         try {
+            final File file = model.getWorkingFile();
+
+            CRC32 crc = new CRC32();
+            FileInputStream fis = new FileInputStream(file);
+            FileChannel channel = new FileInputStream(file).getChannel();
+            final long fileSize = channel.size();
+
+            MappedByteBuffer buf = channel.map(FileChannel.MapMode.READ_ONLY, 0, fileSize);
+            byte[] buffer = new byte[(int) fileSize];
+            buf.get(buffer);
+
+            crc.update(buffer);
+            System.out.println(crc.getValue());
+
             view.getTextArea().read(new FileReader(model.getWorkingFile()), null);
         } catch (IOException e) {
             e.printStackTrace();

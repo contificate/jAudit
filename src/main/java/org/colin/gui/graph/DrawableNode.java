@@ -4,7 +4,13 @@ import com.github.javaparser.ast.Node;
 
 import java.awt.*;
 
+/**
+ * Drawable node adapter pattern
+ */
 public class DrawableNode implements GraphDrawable {
+    /**
+     * Adaptee
+     */
     protected final Node node;
     private String label;
     private Rectangle bounds = new Rectangle();

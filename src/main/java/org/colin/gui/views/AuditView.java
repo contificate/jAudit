@@ -59,7 +59,7 @@ public class AuditView extends JPanel {
             textArea.setFont(font);
             methodTree.setFont(font);
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, e.getMessage());
+            JOptionPane.showMessageDialog(this, "Failed to load font");
         }
 
         // wrap textarea in scroll pane (enables line numbers)

@@ -8,12 +8,12 @@ import java.util.ArrayList;
 
 public class GraphView<T extends GraphDrawable> extends JPanel {
 
-    private GraphCanvas canvas;
+    private GraphCanvas<T> canvas;
     private JScrollPane scrollPane;
 
     public GraphView() {
         super(new BorderLayout());
-        canvas = new GraphCanvas();
+        canvas = new GraphCanvas<>();
         scrollPane = new JScrollPane(canvas);
         add(scrollPane, BorderLayout.CENTER);
         initListeners();
@@ -40,12 +40,6 @@ public class GraphView<T extends GraphDrawable> extends JPanel {
             public void mousePressed(MouseEvent mouseEvent) {
                 super.mousePressed(mouseEvent);
                 origin = mouseEvent.getPoint();
-            }
-
-            @Override
-            public void mouseClicked(MouseEvent mouseEvent) {
-                final Point clickPoint = mouseEvent.getPoint();
-                // TODO: functionality?
             }
 
             @Override
