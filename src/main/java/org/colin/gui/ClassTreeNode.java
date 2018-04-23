@@ -1,15 +1,15 @@
 package org.colin.gui;
 
-import com.github.javaparser.Range;
-import com.github.javaparser.ast.body.MethodDeclaration;
 import org.colin.res.IconLoader;
 
 import javax.swing.*;
 import javax.swing.tree.DefaultMutableTreeNode;
 
 import static org.colin.res.IconNames.CLASS_ICON;
-import static org.colin.res.IconNames.METHOD_ICON;
 
+/**
+ * Tree node for classes<br>
+ */
 public class ClassTreeNode extends DefaultMutableTreeNode implements TreeDrawable {
 
     private String name;

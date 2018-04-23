@@ -1,6 +1,6 @@
 package org.colin.gui;
 
-import javax.swing.ImageIcon;
+import javax.swing.*;
 
 /**
  * Interface for tree nodes to implement to allow renders to draw them to their liking
@@ -8,13 +8,15 @@ import javax.swing.ImageIcon;
 public interface TreeDrawable {
     /**
      * Get (possibly HTML-formatted) component label
-     * @return
+     *
+     * @return return tree component label
      */
     String getText();
 
     /**
      * Get component's icon
-     * @return
+     *
+     * @return return tree component icon
      */
     ImageIcon getIcon();
 }

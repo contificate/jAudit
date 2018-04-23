@@ -30,13 +30,13 @@ public class OpenFileAction extends AbstractAction {
             frame = (JFrame) parent;
 
         JFileChooser chooser = new JFileChooser();
-        chooser.setMultiSelectionEnabled(true);
+        chooser.setMultiSelectionEnabled(true); // allow multiple files to be selected
 
         // TODO remove
         chooser.setCurrentDirectory(new File("/home/dosto/tests"));
         //
 
-        FileNameExtensionFilter filter = new FileNameExtensionFilter(
+        final FileNameExtensionFilter filter = new FileNameExtensionFilter(
                 "Java source files", "java");
         chooser.setFileFilter(filter);
 

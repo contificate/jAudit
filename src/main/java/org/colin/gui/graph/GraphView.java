@@ -8,7 +8,7 @@ import java.util.ArrayList;
 
 public class GraphView<T extends GraphDrawable> extends JPanel {
 
-    private GraphCanvas<T> canvas;
+    protected GraphCanvas<T> canvas;
     private JScrollPane scrollPane;
 
     public GraphView() {

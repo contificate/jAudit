@@ -8,34 +8,50 @@ import org.colin.audit.AuditContext;
 import org.colin.gui.ClassTreeNode;
 import org.colin.gui.ClassTreeRenderer;
 import org.colin.gui.MethodTreeNode;
-import org.colin.gui.graph.DrawableNode;
-import org.colin.gui.graph.GraphDrawable;
-import org.colin.gui.graph.GraphView;
+import org.colin.gui.graph.AuditGraph;
 import org.colin.gui.models.AuditModel;
+import org.colin.gui.models.AuditorModel;
 import org.colin.gui.views.AuditView;
+import org.colin.gui.views.AuditorView;
 import org.colin.res.IconLoader;
 import org.colin.visitors.MethodTreeVisitor;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 
 import javax.swing.*;
+import javax.swing.event.CaretEvent;
+import javax.swing.event.CaretListener;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.text.BadLocationException;
 import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreeSelectionModel;
 import java.awt.event.ActionEvent;
-import java.io.*;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.util.ArrayList;
+import java.awt.event.KeyEvent;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.Stack;
-import java.util.zip.CRC32;
 
-public class AuditController implements TreeSelectionListener {
+import static org.colin.res.IconNames.AST_DEPTH_ICON;
+import static org.colin.res.IconNames.TREE_ICON;
 
+public class AuditController implements TreeSelectionListener, CaretListener {
+
+    /**
+     * Model used for updating the view.
+     */
     private AuditModel model;
+
+    /**
+     * Auditing view used to invoke controller.
+     */
     private AuditView view;
 
+    /**
+     * Create audit controller to cohere both model and view.
+     *
+     * @param model model that updates what's shown by {@link AuditView}
+     * @param view  view that invokes controller's actions
+     */
     public AuditController(AuditModel model, AuditView view) {
         this.model = model;
         this.view = view;
@@ -56,6 +72,12 @@ public class AuditController implements TreeSelectionListener {
 
     private void initListeners() {
         view.setTreeListener(this);
+        view.getTextArea().addCaretListener(this);
+    }
+
+    @Override
+    public void caretUpdate(CaretEvent caretEvent) {
+        System.out.println("faggot");
     }
 
     /**
@@ -82,24 +104,32 @@ public class AuditController implements TreeSelectionListener {
          */
         @Override
         protected void done() {
-            // queue progress-dialog closure in AWT event queuehttp://10.163.2.32
-            SwingUtilities.invokeLater(() -> {
-                showProgressDialog(false);
-            });
+            // queue progress-dialog closure in AWT event queue
+            SwingUtilities.invokeLater(() -> showProgressDialog(false));
         }
     }
 
-    private class AuditAction extends AbstractAction {
-        public AuditAction() {
-            super("Create audit", IconLoader.loadIcon("annotation.png"));
+    /**
+     * Action performed when an audit is intended to be created.
+     */
+    private class ViewDepthAction extends AbstractAction {
+
+        protected AuditContext contextTrace;
+
+        public ViewDepthAction() {
+            super(view.getLocalised("view_depth"), IconLoader.loadIcon(AST_DEPTH_ICON));
+            putValue("MnemonicKey", KeyEvent.VK_V);
         }
 
         @Override
         public void actionPerformed(ActionEvent actionEvent) {
-
+            // get source code view
             final RSyntaxTextArea textArea = view.getTextArea();
 
-            final int beginOffset = textArea.getSelectionStart(), endOffset = textArea.getSelectionEnd();
+            // get rough selection bounds
+            final int beginOffset = textArea.getSelectionStart(),
+                    endOffset = textArea.getSelectionEnd();
+
             try {
                 // get line offsets
                 final int beginLine = textArea.getLineOfOffset(beginOffset),
@@ -111,7 +141,7 @@ public class AuditController implements TreeSelectionListener {
                         endColumn = (endOffset - startLineOffset);
 
                 // single line selections will likely be snapped selections so we reduce the selection to get more accurate positions
-                if(beginLine == endLine) {
+                if (beginLine == endLine) {
                     beginColumn++;
                     endColumn--;
                 }
@@ -122,55 +152,79 @@ public class AuditController implements TreeSelectionListener {
                 // selectively depth-first search AST
                 final Node rootNode = model.getUnit().getParentNodeForChildren();
 
-                // TODO: delegate to private member for context for cloneable back-propagation
-
-                ArrayList<GraphDrawable> trace = new ArrayList<>();
-
-                AuditContext contextTrace = new AuditContext();
+                // initialise new context
+                contextTrace = new AuditContext();
 
                 // AST traversal stack
                 Stack<Node> toVisit = new Stack<>();
                 toVisit.push(rootNode);
 
                 // continually pop and traverse and push all childern of interior nodes
-                while(!(toVisit.empty())) {
+                while (!(toVisit.empty())) {
                     final Node node = toVisit.pop();
                     final Range nodeRange = node.getRange().orElse(Range.range(0, 0, 0, 0));
 
-                    if(nodeRange.contains(selectionRange)) {
-                        // TODO: remove debug
-                        System.out.println(node.getClass().toString());
+                    // internal node contains selection range?
+                    if (nodeRange.contains(selectionRange)) {
+                        // add internal node to context-trace
+                        contextTrace.add(node);
 
-           
-                        for(final Node child : node.getChildNodes()) {
+                        // push all children
+                        for (final Node child : node.getChildNodes()) {
                             toVisit.push(child);
                         }
                     }
 
                 }
 
-                GraphView graphView = view.getGraphView();
-                graphView.setVertices(trace);
-                SwingUtilities.invokeLater(graphView::repaint);
+                // set the context of the graph view
+                AuditGraph graphView = view.getGraphView();
+                graphView.setContext(contextTrace);
 
+                // queue graph view repaint
+                SwingUtilities.invokeLater(graphView::repaint);
             } catch (BadLocationException e) {
                 e.printStackTrace();
             }
         }
     }
 
+    private class AuditAction extends ViewDepthAction {
+
+        public AuditAction() {
+            putValue("Name", view.getLocalised("create_audit"));
+            putValue("SmallIcon", IconLoader.loadIcon(TREE_ICON));
+            putValue("MnemonicKey", KeyEvent.VK_A);
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent actionEvent) {
+            super.actionPerformed(actionEvent);
+
+            SwingUtilities.invokeLater(() -> {
+                AuditorModel model = new AuditorModel(contextTrace);
+                AuditorView view = new AuditorView(null);
+                AuditorController controller = new AuditorController(model, view);
+                view.setVisible(true);
+            });
+
+        }
+    }
+
     private void initAuditMenu() {
         JPopupMenu auditMenu = new JPopupMenu();
-        auditMenu.add(new AuditAction());
+        auditMenu.add(new ViewDepthAction());
         auditMenu.addSeparator();
+        auditMenu.add(new AuditAction());
         view.getTextArea().setPopupMenu(auditMenu);
         view.getMethodTree().setComponentPopupMenu(auditMenu);
     }
 
     /**
-     * Initialise method-tree
+     * Initialise method-tree using {@link MethodTreeVisitor}
      */
     private void initTree() {
+        // get tree model
         final DefaultTreeModel modelTree = model.getTreeModel();
 
         // get root node for adding leaves (methods)
@@ -188,6 +242,7 @@ public class AuditController implements TreeSelectionListener {
 
     /**
      * Expand top-level tree nodes
+     *
      * @param tree tree being expanded
      */
     private void expandTopLevelNodes(JTree tree) {
@@ -195,27 +250,20 @@ public class AuditController implements TreeSelectionListener {
             tree.expandRow(i);
     }
 
+    /**
+     * Toggle visibility of progress bar
+     *
+     * @param visible whether progress dialog should be shown
+     */
     private void showProgressDialog(boolean visible) {
         view.getProgressDialog().setVisible(visible);
     }
 
-    // TODO: crc32
+    /**
+     * Read working file from model into source code text-area
+     */
     private void readFile() {
         try {
-            final File file = model.getWorkingFile();
-
-            CRC32 crc = new CRC32();
-            FileInputStream fis = new FileInputStream(file);
-            FileChannel channel = new FileInputStream(file).getChannel();
-            final long fileSize = channel.size();
-
-            MappedByteBuffer buf = channel.map(FileChannel.MapMode.READ_ONLY, 0, fileSize);
-            byte[] buffer = new byte[(int) fileSize];
-            buf.get(buffer);
-
-            crc.update(buffer);
-            System.out.println(crc.getValue());
-
             view.getTextArea().read(new FileReader(model.getWorkingFile()), null);
         } catch (IOException e) {
             e.printStackTrace();
@@ -241,6 +289,7 @@ public class AuditController implements TreeSelectionListener {
     /**
      * Callback for method-tree selection event,
      * allows for method-tree to be a navigational component.
+     *
      * @param e event
      */
     @Override
@@ -255,15 +304,16 @@ public class AuditController implements TreeSelectionListener {
 
         // if node represents a method, jump to beginning line (could possibly hit annotation)
         if (node instanceof MethodTreeNode) {
+            // down-cast node related to selection to method node
             final MethodTreeNode method = (MethodTreeNode) node;
 
             try {
+                // make view jump to method's line
                 view.jumpToLine(method.getStartLine() - 1);
             } catch (BadLocationException ex) {
                 ex.printStackTrace();
             }
         }
-
     }
 
 

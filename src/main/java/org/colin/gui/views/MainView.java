@@ -37,7 +37,6 @@ public class MainView extends JFrame {
         initMenu();
         initComponents();
         initStatusBar();
-        //initListeners();
 
         setVisible(true);
     }

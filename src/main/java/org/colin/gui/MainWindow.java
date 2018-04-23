@@ -4,6 +4,7 @@ import com.alee.extended.statusbar.WebMemoryBar;
 import com.alee.extended.statusbar.WebStatusBar;
 import com.alee.laf.menu.WebMenu;
 import com.alee.laf.menu.WebMenuBar;
+import com.github.javaparser.metamodel.DerivedProperty;
 import org.colin.actions.*;
 import org.colin.gui.controllers.AuditController;
 import org.colin.gui.models.AuditModel;
@@ -20,6 +21,7 @@ import java.util.ResourceBundle;
 
 import static org.colin.res.IconNames.*;
 
+@Deprecated
 public class MainWindow extends JFrame implements FileReceiver, Closeable {
 
     private JPanel layout;
@@ -41,9 +43,6 @@ public class MainWindow extends JFrame implements FileReceiver, Closeable {
         initListeners();
 
         setVisible(true);
-
-        // TEST
-       //  receiveFile(new File("/home/dosto/CompileDriver.java"), FileIntent.OPEN);
     }
 
     private void initMenu() {

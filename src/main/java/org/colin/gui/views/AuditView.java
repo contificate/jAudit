@@ -1,6 +1,7 @@
 package org.colin.gui.views;
 
 import com.alee.extended.window.WebProgressDialog;
+import org.colin.gui.graph.AuditGraph;
 import org.colin.gui.graph.GraphView;
 import org.colin.gui.models.AuditModel;
 import org.colin.main.Main;
@@ -11,6 +12,7 @@ import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rtextarea.Gutter;
 import org.fife.ui.rtextarea.RTextScrollPane;
 
+import javax.annotation.Nonnull;
 import javax.swing.*;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.text.BadLocationException;
@@ -27,7 +29,9 @@ public class AuditView extends JPanel {
     private RSyntaxTextArea textArea;
     private WebProgressDialog progressDialog;
     private JTabbedPane toolTabs;
-    private GraphView graphView;
+    // private GraphView graphView;
+
+    private AuditGraph graphView;
 
     private AuditModel model;
 
@@ -59,7 +63,7 @@ public class AuditView extends JPanel {
             textArea.setFont(font);
             methodTree.setFont(font);
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Failed to load font");
+            JOptionPane.showMessageDialog(this, rb.getString("font_fail"));
         }
 
         // wrap textarea in scroll pane (enables line numbers)
@@ -71,7 +75,7 @@ public class AuditView extends JPanel {
         gutter.setBackground(ColourUtil.fromHex("#f9f9f9"));
 
         toolTabs = new JTabbedPane();
-        toolTabs.addTab(rb.getString("ast_depth"), IconLoader.loadIcon(AST_DEPTH_ICON), graphView = new GraphView());
+        toolTabs.addTab(rb.getString("ast_depth"), IconLoader.loadIcon(AST_DEPTH_ICON), graphView = new AuditGraph());
         JSplitPane horizonal = new JSplitPane(JSplitPane.VERTICAL_SPLIT, sp, toolTabs);
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, new JScrollPane(methodTree), horizonal);
 
@@ -94,9 +98,23 @@ public class AuditView extends JPanel {
 
     public void jumpToLine(int line) throws BadLocationException {
         textArea.setCaretPosition(textArea.getLineStartOffset(line));
+        centreLineInView();
     }
 
-    public GraphView getGraphView() {
+    private void centreLineInView() throws BadLocationException {
+        Rectangle rect = textArea.modelToView(textArea.getCaretPosition());
+        Container container = SwingUtilities.getAncestorOfClass(JViewport.class, textArea);
+        JViewport viewport = (JViewport) container;
+        int extentHeight = viewport.getExtentSize().height;
+        int viewHeight = viewport.getViewSize().height;
+
+        int y = Math.max(0, rect.y - ((extentHeight - rect.height) / 2));
+        y = Math.min(y, viewHeight - extentHeight);
+
+        viewport.setViewPosition(new Point(0, y));
+    }
+
+    public AuditGraph getGraphView() {
         return graphView;
     }
 
@@ -114,5 +132,9 @@ public class AuditView extends JPanel {
 
     public JTabbedPane getToolTabs() {
         return toolTabs;
+    }
+
+    public String getLocalised(@Nonnull String key) {
+        return rb.getString(key);
     }
 }

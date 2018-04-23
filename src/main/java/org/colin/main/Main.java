@@ -1,8 +1,10 @@
 package org.colin.main;
 
 import com.alee.laf.WebLookAndFeel;
-import org.colin.gui.MainWindow;
+import org.colin.gui.controllers.AuditorController;
 import org.colin.gui.controllers.MainController;
+import org.colin.gui.models.AuditorModel;
+import org.colin.gui.views.AuditorView;
 import org.colin.gui.views.MainView;
 
 import javax.swing.*;
@@ -26,8 +28,8 @@ public class Main {
         final Locale userLocale = Locale.getDefault();
 
         // select locale
-        for(final Locale supported : supportedLocales) {
-            if(userLocale == supported) {
+        for (final Locale supported : supportedLocales) {
+            if (userLocale == supported) {
                 locale = supported;
                 break;
             }

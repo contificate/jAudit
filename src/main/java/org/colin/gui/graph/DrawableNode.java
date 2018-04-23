@@ -5,15 +5,32 @@ import com.github.javaparser.ast.Node;
 import java.awt.*;
 
 /**
- * Drawable node adapter pattern
+ * Drawable node.<br><br>
+ * This class is simply an adapter pattern to allow nodes (the <i>adaptee</i>) to be drawn.<br>
+ * It wraps the node ({@link Node}) and implements an interface - {@link GraphDrawable} - on its behalf.
+ * This class adheres to the <a href="https://en.wikipedia.org/wiki/Open/closed_principle">Open/Closed principle</a> from
+ * the SOLID principles.
  */
 public class DrawableNode implements GraphDrawable {
     /**
      * Adaptee
      */
     protected final Node node;
+
+    /**
+     * Cached, trimmed, name of node.
+     */
     private String label;
+
+    /**
+     * Bounds of the node (vertex).
+     * Each bound is a rectangle
+     */
     private Rectangle bounds = new Rectangle();
+
+    /**
+     * Background colour used when drawing
+     */
     private Color backgroundColor = Color.WHITE;
 
     public DrawableNode(Node node) {
@@ -30,12 +47,24 @@ public class DrawableNode implements GraphDrawable {
         label = label.substring(label.lastIndexOf(".") + 1);
     }
 
+    /**
+     * Return drawable node's width (includes font metrics for label)
+     *
+     * @param g parent graphics context (used for context-aware metrics)
+     * @return width in pixels
+     */
     @Override
     public int getWidth(Graphics2D g) {
         final FontMetrics fm = g.getFontMetrics();
         return (fm.stringWidth(label) + 30);
     }
 
+    /**
+     * Draw the node, given parent graphics context.
+     * @param g parent graphics context
+     * @param x x-coordinate
+     * @param y y-coordinate
+     */
     @Override
     public void draw(Graphics2D g, int x, int y) {
         final FontMetrics fm = g.getFontMetrics();
@@ -61,6 +90,10 @@ public class DrawableNode implements GraphDrawable {
         g.drawString(label, (x + ((rectWidth - textWidth) / 2)), 60 + ((rectHeight + 30) - textHeight) / 2);
     }
 
+    /**
+     * Set background colour
+     * @param color background colour
+     */
     @Override
     public void setBackground(Color color) {
         this.backgroundColor = color;

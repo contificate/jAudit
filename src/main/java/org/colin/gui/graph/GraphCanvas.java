@@ -1,6 +1,5 @@
 package org.colin.gui.graph;
 
-import com.github.javaparser.ast.expr.SimpleName;
 import org.colin.util.ColourUtil;
 
 import javax.swing.*;
@@ -26,6 +25,14 @@ public class GraphCanvas<T extends GraphDrawable> extends JPanel {
         this.vertices = vertices;
     }
 
+    /**
+     * Draw horizontal arrow
+     *
+     * @param g  graphics context
+     * @param x  x-coordinate
+     * @param x1 second x-coordinate
+     * @param y  y-coordinate
+     */
     private void drawHorizontalArrow(Graphics2D g, int x, int x1, int y) {
         g.setStroke(new BasicStroke(2));
         g.drawLine(x + 1, y, x + PADDING, y);
@@ -33,6 +40,9 @@ public class GraphCanvas<T extends GraphDrawable> extends JPanel {
         g.drawLine((x + PADDING_WIDTH), (y + 5), (x + PADDING), y);
     }
 
+    /**
+     * @param g
+     */
     @Override
     public void paint(Graphics g) {
         super.paintComponent(g);
@@ -63,17 +73,27 @@ public class GraphCanvas<T extends GraphDrawable> extends JPanel {
 
             int lineY = 77;
 
-            if (i < (len - 1))
+            final int lastIndex = (len - 1);
+
+            // if not last item, draw a directed arrow
+            if (i < lastIndex)
                 drawHorizontalArrow(graphics, x, (x += PADDING), lineY);
 
-            if (i == (len - 1))
+            // if last item, use different background colour (to further signify the last element is the sink vertex)
+            if (i == lastIndex)
                 vertex.setBackground(ColourUtil.fromHex("#dddddd"));
 
+            //
             prevX = (x + PADDING);
         }
 
     }
 
+    /**
+     * Get preferred size, used by {@link GraphView} to specify draggable viewport bounds.
+     *
+     * @return preferred dimensions
+     */
     @Override
     public Dimension getPreferredSize() {
         return new Dimension(prevX + PADDING, 150);

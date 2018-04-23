@@ -10,13 +10,24 @@ import static org.colin.res.IconNames.CLOSE_ICON;
 
 public class CloseAction extends AbstractAction {
 
-    protected JFrame parent;
+    /**
+     * Window that this class will dispatch a close event for.
+     */
+    private JFrame parent;
 
+    /**
+     * Create close action.
+     * @param window window to be closed by action
+     */
     public CloseAction(JFrame window) {
         super("Close", IconLoader.loadIcon(CLOSE_ICON));
         parent = window;
     }
 
+    /**
+     * Dispatch window closing event
+     * @param actionEvent invoker's action event
+     */
     @Override
     public void actionPerformed(ActionEvent actionEvent) {
         parent.dispatchEvent(new WindowEvent(parent, WindowEvent.WINDOW_CLOSING));

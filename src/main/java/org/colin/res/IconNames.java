@@ -11,4 +11,6 @@ public class IconNames {
     public static final String CLASS_ICON = "class.png";
     public static final String JVM_ICON = "jvm-icon.png";
     public static final String AST_DEPTH_ICON = "depth-icon.png";
+    public static final String TREE_ICON = "tree.png";
+    public static final String TREE_SELECTED_ICON = "tree-selected.png";
 }
