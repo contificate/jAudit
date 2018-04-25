@@ -19,10 +19,10 @@ public abstract class Migration {
     /**
      * The method is for creational actions upon the database schema.
      */
-    public abstract void up();
+    public abstract boolean up();
 
     /**
      * The method is for reversing the actions of {@link Migration#up()}.
      */
-    public abstract void down();
+    public abstract boolean down();
 }

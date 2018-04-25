@@ -34,7 +34,10 @@ import java.util.Stack;
 import static org.colin.res.IconNames.AST_DEPTH_ICON;
 import static org.colin.res.IconNames.TREE_ICON;
 
-public class AuditController implements TreeSelectionListener, CaretListener {
+/**
+ * Controller used by the {@link AuditView} view.
+ */
+public class AuditController implements TreeSelectionListener {
 
     /**
      * Model used for updating the view.
@@ -56,13 +59,19 @@ public class AuditController implements TreeSelectionListener, CaretListener {
         this.model = model;
         this.view = view;
 
+        // initialise auxiliary actions
         initRenderers();
         initAuditMenu();
         initListeners();
 
+        // show progress dialog as audit pane is being initialised
         showProgressDialog(true);
+
+        // read file into text area
         readFile();
 
+        // parse provided file into searchable AST structure in a thread-safe manner;
+        // runs in the background as to not block GUI thread
         new ParserWorker().execute();
     }
 
@@ -70,14 +79,11 @@ public class AuditController implements TreeSelectionListener, CaretListener {
         view.getMethodTree().setCellRenderer(new ClassTreeRenderer());
     }
 
+    /**
+     * Initialise listeners for view to perform event-based callbacks in the controller
+     */
     private void initListeners() {
         view.setTreeListener(this);
-        view.getTextArea().addCaretListener(this);
-    }
-
-    @Override
-    public void caretUpdate(CaretEvent caretEvent) {
-        System.out.println("faggot");
     }
 
     /**
@@ -270,7 +276,7 @@ public class AuditController implements TreeSelectionListener, CaretListener {
         }
     }
 
-    // TODO: implement real exception here, demonstrate in harness for test report
+    // TODO: implement real exception here, demonstrate in harness for test report, use view's getLocalised
     private synchronized boolean initCompilationUnit() {
         try {
             model.setUnit(JavaParser.parse(model.getWorkingFile()));

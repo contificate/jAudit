@@ -1,60 +1,84 @@
 package org.colin.main;
 
 import com.alee.laf.WebLookAndFeel;
+import org.colin.db.DBConnection;
+import org.colin.db.GlobalRegistry;
+import org.colin.db.migrations.CreateFileTable;
+import org.colin.gui.LanguageOption;
 import org.colin.gui.controllers.AuditorController;
+import org.colin.gui.controllers.LangSelectionController;
 import org.colin.gui.controllers.MainController;
 import org.colin.gui.models.AuditorModel;
+import org.colin.gui.models.LangSelectionModel;
 import org.colin.gui.views.AuditorView;
+import org.colin.gui.views.LangSelectionView;
 import org.colin.gui.views.MainView;
 
 import javax.swing.*;
 import java.util.Locale;
 
+import static org.colin.db.GlobalConstants.DB_PATH;
+import static org.colin.res.IconLoader.loadIcon;
+import static org.colin.res.IconNames.GERMANY_ICON;
+import static org.colin.res.IconNames.UK_ICON;
+
 public class Main {
+
     /**
-     * Supported locales
+     * Language options for jAudit
      */
-    private static final Locale[] supportedLocales = {
-            Locale.ENGLISH, Locale.GERMANY
+    private static final LanguageOption[] languageOptions = {
+            new LanguageOption("English (GB)", loadIcon(UK_ICON), Locale.ENGLISH),
+            new LanguageOption("Deutsch", loadIcon(GERMANY_ICON), Locale.GERMANY)
     };
 
     /**
      * Default to English (en_GB)
      */
-    public static Locale locale = supportedLocales[0];
+    public static Locale locale = languageOptions[0].getLocale();
 
+    /**
+     * Show language selection dialog and set the locale based on user's choice
+     */
     private static void selectLocale() {
-        // get user's locale
-        final Locale userLocale = Locale.getDefault();
+        // initialise model with supported locales
+        LangSelectionModel model = new LangSelectionModel(languageOptions);
 
-        // select locale
-        for (final Locale supported : supportedLocales) {
-            if (userLocale == supported) {
-                locale = supported;
-                break;
-            }
-        }
+        // create dialog view
+        LangSelectionView view = new LangSelectionView(null);
 
-        // testing
-        locale = supportedLocales[1];
+        // initialise controller
+        new LangSelectionController(model, view);
+
+        // show the view, blocks
+        view.setVisible(true);
+
+        // set user-selected locale
+        locale = model.getSelectedLocale();
     }
 
-    static {
-        // select user locale
-        selectLocale();
-    }
 
+    /**
+     * Entry point
+     * @param args ignored arguments
+     */
     public static void main(String[] args) {
         // initialise look and feel
         WebLookAndFeel.install();
 
-        // select locale
-        // selectLocale();
+        // allow user to select locale
+        selectLocale();
+
+        // TODO: move to place
+        GlobalRegistry.getInstance().put(DB_PATH, "/home/dosto/jaudit.sqlite");
+        DBConnection connection = DBConnection.getInstance();
+        if(connection.isConnected())
+            new CreateFileTable(connection).down();
 
         // queue MainWindow's creation in AWT event queue
         SwingUtilities.invokeLater(() -> {
             MainView view = new MainView();
-            MainController controller = new MainController(view);
+            new MainController(view);
         });
     }
 }

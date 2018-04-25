@@ -12,6 +12,7 @@ import javax.swing.border.Border;
 import java.awt.*;
 import java.util.ArrayList;
 
+@Deprecated
 public class ContextView extends JPanel {
 
     private GraphView graphView;

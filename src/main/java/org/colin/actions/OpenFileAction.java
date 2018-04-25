@@ -33,7 +33,7 @@ public class OpenFileAction extends AbstractAction {
         chooser.setMultiSelectionEnabled(true); // allow multiple files to be selected
 
         // TODO remove
-        chooser.setCurrentDirectory(new File("/home/dosto/tests"));
+        // chooser.setCurrentDirectory(new File("/home/dosto/tests"));
         //
 
         final FileNameExtensionFilter filter = new FileNameExtensionFilter(
