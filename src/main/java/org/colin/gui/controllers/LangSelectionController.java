@@ -38,16 +38,27 @@ public class LangSelectionController implements ActionListener {
         initListener();
     }
 
+    /**
+     * Initialise the model and renderer for the model
+     */
     private void initModel() {
         final JComboBox<LanguageOption> comboBox = view.getOptionsBox();
         comboBox.setModel(model);
         comboBox.setRenderer(new LangListRenderer());
     }
 
+    /**
+     * Initialiser selection/cancellation listener
+     */
     private void initListener() {
         view.getOptionsBox().addActionListener(this);
     }
 
+    /**
+     * Event that handles both cancellation and selection of language.
+     *
+     * @param actionEvent triggering event
+     */
     @Override
     public void actionPerformed(ActionEvent actionEvent) {
         view.setVisible(false);

@@ -2,6 +2,7 @@ package org.colin.gui.controllers;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ParseProblemException;
+import com.github.javaparser.Problem;
 import com.github.javaparser.Range;
 import com.github.javaparser.ast.Node;
 import org.colin.audit.AuditContext;
@@ -11,15 +12,14 @@ import org.colin.gui.MethodTreeNode;
 import org.colin.gui.graph.AuditGraph;
 import org.colin.gui.models.AuditModel;
 import org.colin.gui.models.AuditorModel;
+import org.colin.gui.models.ParseProblemModel;
 import org.colin.gui.views.AuditView;
 import org.colin.gui.views.AuditorView;
-import org.colin.res.IconLoader;
+import org.colin.gui.views.ParseProblemView;
 import org.colin.visitors.MethodTreeVisitor;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 
 import javax.swing.*;
-import javax.swing.event.CaretEvent;
-import javax.swing.event.CaretListener;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 import javax.swing.text.BadLocationException;
@@ -29,10 +29,12 @@ import java.awt.event.KeyEvent;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Stack;
+import java.util.concurrent.ExecutionException;
 
-import static org.colin.res.IconNames.AST_DEPTH_ICON;
-import static org.colin.res.IconNames.TREE_ICON;
+import static org.colin.res.IconLoader.loadIcon;
+import static org.colin.res.IconNames.*;
 
 /**
  * Controller used by the {@link AuditView} view.
@@ -48,6 +50,8 @@ public class AuditController implements TreeSelectionListener {
      * Auditing view used to invoke controller.
      */
     private AuditView view;
+
+    private boolean parsedFile = false;
 
     /**
      * Create audit controller to cohere both model and view.
@@ -69,10 +73,20 @@ public class AuditController implements TreeSelectionListener {
 
         // read file into text area
         readFile();
+    }
 
+    public boolean parse() {
         // parse provided file into searchable AST structure in a thread-safe manner;
         // runs in the background as to not block GUI thread
-        new ParserWorker().execute();
+        ParserWorker worker = new ParserWorker();
+        worker.execute();
+        try {
+            return worker.get();
+        } catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+
+        return false;
     }
 
     private void initRenderers() {
@@ -90,19 +104,20 @@ public class AuditController implements TreeSelectionListener {
      * Create compilation unit (parse file) in background
      * as to avoid blocking the GUI thread.
      */
-    private class ParserWorker extends SwingWorker<Boolean, Void> {
+    private class ParserWorker extends SwingWorker<Boolean, Boolean> {
+
         @Override
         protected Boolean doInBackground() throws ParseProblemException {
             // attempt to parse file
-            boolean success = initCompilationUnit();
+            parsedFile = initCompilationUnit();
 
             // if parsing is successful, run method visitor to initialise method-tree
-            if (success) {
+            if (parsedFile) {
                 initTree();
             }
 
             // if parsing failed without throwing ParseProblemException, return success value anyway
-            return success;
+            return parsedFile;
         }
 
         /**
@@ -112,7 +127,18 @@ public class AuditController implements TreeSelectionListener {
         protected void done() {
             // queue progress-dialog closure in AWT event queue
             SwingUtilities.invokeLater(() -> showProgressDialog(false));
+
+            // state
+            try {
+                parsedFile = get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
         }
+    }
+
+    public boolean isParsedFile() {
+        return parsedFile;
     }
 
     /**
@@ -123,7 +149,7 @@ public class AuditController implements TreeSelectionListener {
         protected AuditContext contextTrace;
 
         public ViewDepthAction() {
-            super(view.getLocalised("view_depth"), IconLoader.loadIcon(AST_DEPTH_ICON));
+            super(view.getLocalised("view_depth"), loadIcon(AST_DEPTH_ICON));
             putValue("MnemonicKey", KeyEvent.VK_V);
         }
 
@@ -165,7 +191,7 @@ public class AuditController implements TreeSelectionListener {
                 Stack<Node> toVisit = new Stack<>();
                 toVisit.push(rootNode);
 
-                // continually pop and traverse and push all childern of interior nodes
+                // continually pop and traverse and push all children of internal nodes
                 while (!(toVisit.empty())) {
                     final Node node = toVisit.pop();
                     final Range nodeRange = node.getRange().orElse(Range.range(0, 0, 0, 0));
@@ -199,7 +225,7 @@ public class AuditController implements TreeSelectionListener {
 
         public AuditAction() {
             putValue("Name", view.getLocalised("create_audit"));
-            putValue("SmallIcon", IconLoader.loadIcon(TREE_ICON));
+            putValue("SmallIcon", loadIcon(TREE_ICON));
             putValue("MnemonicKey", KeyEvent.VK_A);
         }
 
@@ -211,6 +237,7 @@ public class AuditController implements TreeSelectionListener {
                 AuditorModel model = new AuditorModel(contextTrace);
                 AuditorView view = new AuditorView(null);
                 AuditorController controller = new AuditorController(model, view);
+                // TODO: get result from this shit, and then add to AuditModel from here and then create document builder stuff
                 view.setVisible(true);
             });
 
@@ -281,11 +308,22 @@ public class AuditController implements TreeSelectionListener {
         try {
             model.setUnit(JavaParser.parse(model.getWorkingFile()));
         } catch (FileNotFoundException e) {
-            JFrame parent = (JFrame) SwingUtilities.getRoot(view);
-            JOptionPane.showMessageDialog(parent, "Problem parsing file!", "Parser error", JOptionPane.ERROR_MESSAGE);
             return false;
         } catch (ParseProblemException ex) {
-            JOptionPane.showMessageDialog(null, ex.getMessage());
+
+            final JFrame parent = (JFrame) SwingUtilities.getRoot(view);
+            final String message = view.getLocalised("parser_error"), desc = view.getLocalised("error_prompt");
+            int option = JOptionPane.showConfirmDialog(parent, desc, message, JOptionPane.YES_NO_OPTION, JOptionPane.ERROR_MESSAGE, loadIcon(ERROR_ICON));
+
+            if(option == JOptionPane.YES_OPTION) {
+                ArrayList<Problem> problems = new ArrayList<>(ex.getProblems());
+                ParseProblemModel model = new ParseProblemModel(problems, this.model.getWorkingFile());
+                ParseProblemView view = new ParseProblemView(parent);
+                new ParseProblemController(model, view);
+
+                view.setVisible(true);
+            }
+
             return false;
         }
 
