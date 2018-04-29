@@ -51,4 +51,9 @@ public class AuditContext implements Iterable<Node> {
         return nodes.iterator();
     }
 
+    public void sublist(int first, int last) {
+        nodes = new ArrayList<>(nodes.subList(first, last));
+        // nodes = (ArrayList<Node>) nodes.subList(first, last);
+    }
+
 }
