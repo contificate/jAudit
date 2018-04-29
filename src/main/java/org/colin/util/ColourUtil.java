@@ -9,6 +9,7 @@ public class ColourUtil {
 
     /**
      * Get {@link Color} from hex string describing colour.
+     *
      * @param hexColour hex colour value (potentially prepended with <b>#</b>) e.g. "#ff0000" (red)
      * @return {@link Color} colour instance
      */
