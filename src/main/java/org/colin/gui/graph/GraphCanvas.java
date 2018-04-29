@@ -6,15 +6,42 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 
+/**
+ * Canvas used to draw the {@link GraphDrawable} elements.
+ *
+ * @param <T> {@link GraphDrawable} item type
+ */
 public class GraphCanvas<T extends GraphDrawable> extends JPanel {
+    /**
+     * List of vertices to be drawn
+     */
     private ArrayList<T> vertices = new ArrayList<>();
 
+    /**
+     * General padding
+     */
     private static final int PADDING = 30;
+
+    /**
+     * Width padding
+     */
     private static final int PADDING_WIDTH = 20;
+
+    /**
+     * Height padding
+     */
     private static final int PADDING_HEIGHT = 30;
 
+    /**
+     * Previous - cached - x-coordinate used to retain state since each invocation
+     * of {@link GraphCanvas#paint(Graphics)} will yield a different graphics context.
+     */
     private int prevX = 0;
 
+    /**
+     * Initialised graph canvas.
+     * Use an offscreen buffer for painting (double buffer).
+     */
     public GraphCanvas() {
         setDoubleBuffered(true);
         setAutoscrolls(true);
@@ -41,7 +68,9 @@ public class GraphCanvas<T extends GraphDrawable> extends JPanel {
     }
 
     /**
-     * @param g
+     * Paint the canvas, e.g. paint all of the vertices.
+     *
+     * @param g parent graphics context
      */
     @Override
     public void paint(Graphics g) {
@@ -59,21 +88,23 @@ public class GraphCanvas<T extends GraphDrawable> extends JPanel {
         // begin offset from padding
         int x = PADDING;
 
+        // get vertices count
+        final int len = vertices.size();
+        final int lastIndex = (len - 1);
+
         // iterate over vertices, pass graphics context to let them draw themselves
-        int len = vertices.size();
         for (int i = 0; i < len; i++) {
             // get drawable vertex
             GraphDrawable vertex = vertices.get(i);
 
-            // draw
-            vertex.draw(graphics, x, 40);
+            // draw the vertex
+            vertex.draw(graphics, x, (PADDING_HEIGHT + 10));
 
             // add vertex width to
             x += vertex.getWidth(graphics);
 
-            int lineY = 77;
-
-            final int lastIndex = (len - 1);
+            // this should really be decided by viewport to center the nodes
+            int lineY = ((PADDING_HEIGHT * 2) + 15);
 
             // if not last item, draw a directed arrow
             if (i < lastIndex)
@@ -83,7 +114,7 @@ public class GraphCanvas<T extends GraphDrawable> extends JPanel {
             if (i == lastIndex)
                 vertex.setBackground(ColourUtil.fromHex("#dddddd"));
 
-            //
+            // accumulate previous positions
             prevX = (x + PADDING);
         }
 

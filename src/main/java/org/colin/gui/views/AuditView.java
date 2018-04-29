@@ -57,9 +57,12 @@ public class AuditView extends JPanel {
         textArea.setEditable(false);
         textArea.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
 
-        // attempt to load font resource for text area
+
         try {
-            Font font = Font.createFont(Font.TRUETYPE_FONT, getClass().getResourceAsStream("/Hack.ttf")).deriveFont(12f);
+            // attempt to load resource font for source code view
+            Font font = Font.createFont(Font.TRUETYPE_FONT,
+                    getClass().getResourceAsStream("/Hack.ttf")).deriveFont(12f);
+
             textArea.setFont(font);
             methodTree.setFont(font);
         } catch (Exception e) {

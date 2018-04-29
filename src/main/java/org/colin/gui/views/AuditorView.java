@@ -10,6 +10,7 @@ import org.colin.main.Main;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.ActionListener;
 import java.util.ResourceBundle;
 
 public class AuditorView extends JDialog {
@@ -18,15 +19,26 @@ public class AuditorView extends JDialog {
     private JList<ASTListElement> list;
     private WebTextArea commentArea;
 
+    private WebButton cancelBtn;
+    private WebButton createBtn;
+
     private ResourceBundle rb = ResourceBundle.getBundle(getClass().getSimpleName(), Main.locale);
 
     public AuditorView(JFrame parent) {
         super(parent, true);
         setTitle(rb.getString("dialog_title"));
-        setSize(380, 500);
+        setSize(380, 400);
         setLocationRelativeTo(null);
 
         initComponents();
+    }
+
+    public void setOnCancel(ActionListener listener) {
+        cancelBtn.addActionListener(listener);
+    }
+
+    public void setOnCreate(ActionListener listener) {
+        createBtn.addActionListener(listener);
     }
 
     private void initComponents() {
@@ -41,18 +53,24 @@ public class AuditorView extends JDialog {
         commentArea.setInputPrompt(rb.getString("input_prompt"));
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, new JScrollPane(list), new WebScrollPane(commentArea));
-        splitPane.setDividerLocation(0.2);
+        splitPane.setDividerLocation(300);
         layout.add(splitPane, BorderLayout.CENTER);
 
         JPanel buttonBox = new JPanel();
         buttonBox.setLayout(new BoxLayout(buttonBox, BoxLayout.LINE_AXIS));
         buttonBox.add(Box.createHorizontalGlue()); // add growing spacer to align all children to the right
-        buttonBox.add(new WebButton(rb.getString("cancel")));
+        cancelBtn = new WebButton(rb.getString("cancel"));
+        buttonBox.add(cancelBtn);
         buttonBox.add(Box.createRigidArea(new Dimension(10, 0))); // add spacer between buttons
-        buttonBox.add(new WebButton(rb.getString("create")));
+        createBtn = new WebButton(rb.getString("create"));
+        buttonBox.add(createBtn);
         layout.add(buttonBox, BorderLayout.PAGE_END);
 
         add(layout);
+    }
+
+    public String getComment() {
+        return commentArea.getText();
     }
 
     public JList<ASTListElement> getList() {

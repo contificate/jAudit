@@ -172,7 +172,8 @@ public class AuditController implements TreeSelectionListener {
                 int beginColumn = (beginOffset - startLineOffset),
                         endColumn = (endOffset - startLineOffset);
 
-                // single line selections will likely be snapped selections so we reduce the selection to get more accurate positions
+                // single line selections will likely be snapped selections so we
+                // reduce the selection to get more accurate positions
                 if (beginLine == endLine) {
                     beginColumn++;
                     endColumn--;
@@ -306,6 +307,7 @@ public class AuditController implements TreeSelectionListener {
     // TODO: implement real exception here, demonstrate in harness for test report, use view's getLocalised
     private synchronized boolean initCompilationUnit() {
         try {
+            // initialise model with compilation unit built from parsing the file
             model.setUnit(JavaParser.parse(model.getWorkingFile()));
         } catch (FileNotFoundException e) {
             return false;

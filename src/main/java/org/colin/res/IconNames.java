@@ -1,6 +1,7 @@
 package org.colin.res;
 
 public class IconNames {
+    public static final String JAUDIT_ICON = "jaudit-icon.png";
     public static final String FILE_ICON = "file.png";
     public static final String CLOSE_ICON = "close.png";
     public static final String JAVA_FILE_ICON = "java-file.png";
@@ -15,4 +16,6 @@ public class IconNames {
     public static final String TREE_SELECTED_ICON = "tree-selected.png";
     public static final String UK_ICON = "uk-icon.png";
     public static final String GERMANY_ICON = "germany-icon.png";
+    public static final String ERROR_ICON = "error-icon.png";
+    public static final String GITHUB_ICON = "github-icon.png";
 }

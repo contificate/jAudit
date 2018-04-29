@@ -21,7 +21,7 @@ public class LangSelectionModel implements ComboBoxModel<LanguageOption> {
     /**
      * Index of selected option
      */
-    private int selectedIndex = -1;
+    private int selectedIndex = 0;
 
     /**
      * Initialise model with (potentially multiple) language options

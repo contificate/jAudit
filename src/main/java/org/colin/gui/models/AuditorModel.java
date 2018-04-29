@@ -23,6 +23,14 @@ public class AuditorModel {
             listModel.addElement(new ASTListElement(node));
     }
 
+    public void reduceContext(int first, int last) {
+        context.sublist(first, last);
+    }
+
+    public AuditContext getContext() {
+        return context;
+    }
+
     public DefaultListModel<ASTListElement> getListModel() {
         return listModel;
     }

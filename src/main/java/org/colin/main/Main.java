@@ -73,7 +73,7 @@ public class Main {
         GlobalRegistry.getInstance().put(DB_PATH, "/home/dosto/jaudit.sqlite");
         DBConnection connection = DBConnection.getInstance();
         if(connection.isConnected())
-            new CreateFileTable(connection).down();
+            new CreateFileTable(connection).up();
 
         // queue MainWindow's creation in AWT event queue
         SwingUtilities.invokeLater(() -> {
