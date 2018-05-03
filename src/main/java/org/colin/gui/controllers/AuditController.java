@@ -5,7 +5,9 @@ import com.github.javaparser.ParseProblemException;
 import com.github.javaparser.Problem;
 import com.github.javaparser.Range;
 import com.github.javaparser.ast.Node;
+import com.github.javaparser.utils.Pair;
 import org.colin.audit.AuditContext;
+import org.colin.db.DBConnection;
 import org.colin.gui.ClassTreeNode;
 import org.colin.gui.ClassTreeRenderer;
 import org.colin.gui.MethodTreeNode;
@@ -29,6 +31,9 @@ import java.awt.event.KeyEvent;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Stack;
 import java.util.concurrent.ExecutionException;
@@ -40,7 +45,6 @@ import static org.colin.res.IconNames.*;
  * Controller used by the {@link AuditView} view.
  */
 public class AuditController implements TreeSelectionListener {
-
     /**
      * Model used for updating the view.
      */
@@ -51,6 +55,9 @@ public class AuditController implements TreeSelectionListener {
      */
     private AuditView view;
 
+    /**
+     * State of "parsedness", used for determining logic.
+     */
     private boolean parsedFile = false;
 
     /**
@@ -63,6 +70,14 @@ public class AuditController implements TreeSelectionListener {
         this.model = model;
         this.view = view;
 
+        // check database and compare model's checksum
+        checkDatabase();
+
+        // if aborted during database check, abort
+        if (model.hasError()) {
+            return;
+        }
+
         // initialise auxiliary actions
         initRenderers();
         initAuditMenu();
@@ -73,6 +88,71 @@ public class AuditController implements TreeSelectionListener {
 
         // read file into text area
         readFile();
+
+        // read existing audits
+        readExistingAudits();
+    }
+
+    private void readExistingAudits() {
+        // get singleton database connection
+        DBConnection db = DBConnection.getInstance();
+
+        // if connected, fetch audits
+        if (db.isConnected()) {
+            try {
+                // create a prepared statement for fetching audits from database
+                PreparedStatement stmt = db.prepare("SELECT * FROM `audits` WHERE file_id=?");
+                stmt.setInt(1, model.getFileId());
+                ResultSet rs = stmt.executeQuery();
+
+                // for each found audit, create a bookmark at the beginning line w/ comment as tooltip
+                while (rs.next()) {
+                    // begin line, comment
+                    addBookmark(rs.getInt(3), rs.getString(6));
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void checkDatabase() {
+        // get DB singleton
+        DBConnection db = DBConnection.getInstance();
+
+        // if connected, try query for file
+        if (db.isConnected()) {
+            try {
+                // get all columns for file if exist
+                PreparedStatement stmt = db.prepare("SELECT * FROM `files` WHERE path=? LIMIT 1");
+                stmt.setString(1, model.getWorkingFile().getPath());
+                ResultSet rs = stmt.executeQuery();
+
+                // if file already referenced in database
+                if (rs.next()) {
+                    // get stored checksum
+                    long checksum = rs.getLong(3);
+
+                    // compare stored checksum to model's just-calculated checksum
+                    if (checksum != model.getFileChecksum()) {
+                        // ask user if they want to continue
+                        int option = JOptionPane.showConfirmDialog(null, view.getLocalised("checksum_error"),
+                                view.getLocalised("error"),
+                                JOptionPane.YES_NO_OPTION,
+                                JOptionPane.ERROR_MESSAGE,
+                                loadIcon(ERROR_ICON));
+
+                        // set the error flag so file doesn't get loaded
+                        model.setHasError(option == JOptionPane.NO_OPTION);
+                    }
+
+                    // give the model the database file id
+                    model.setFileId(rs.getInt(1));
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public boolean parse() {
@@ -238,11 +318,56 @@ public class AuditController implements TreeSelectionListener {
                 AuditorModel model = new AuditorModel(contextTrace);
                 AuditorView view = new AuditorView(null);
                 AuditorController controller = new AuditorController(model, view);
-                // TODO: get result from this shit, and then add to AuditModel from here and then create document builder stuff
                 view.setVisible(true);
+
+                if (writeAuditToDatabase(model)) {
+
+                    System.out.println("wtf");
+
+                    JOptionPane.showMessageDialog(null, "Successfully created audit", "Success",
+                            JOptionPane.INFORMATION_MESSAGE, loadIcon(JAUDIT_ICON));
+
+                    final Pair<Integer, Integer> range = model.getContext().getLineRange();;
+                    addBookmark(range.a, model.getComment());
+                }
             });
 
         }
+    }
+
+    private void addBookmark(final int line, final String comment) {
+        try {
+            view.getGutter().addLineTrackingIcon((line - 1), loadIcon(ANNOTATION_ICON), comment);
+        } catch (BadLocationException e) {
+            // ignore
+        }
+    }
+
+    private boolean writeAuditToDatabase(AuditorModel model) {
+        DBConnection db = DBConnection.getInstance();
+
+        if (db.isConnected()) {
+            try {
+                PreparedStatement stmt = db.prepare("INSERT INTO `audits` (file_id, begin, end, context, comment) " +
+                        "VALUES (?, ?, ?, ?, ?)");
+
+                final Pair<Integer, Integer> lineRange = model.getContext().getLineRange();
+                stmt.setInt(1, this.model.getFileId());
+                stmt.setInt(2, lineRange.a);
+                stmt.setInt(3, lineRange.b);
+                stmt.setString(4, model.getAuditJson());
+                stmt.setString(5, model.getComment());
+
+                stmt.execute();
+
+                return true;
+
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return false;
     }
 
     private void initAuditMenu() {
@@ -304,7 +429,10 @@ public class AuditController implements TreeSelectionListener {
         }
     }
 
-    // TODO: implement real exception here, demonstrate in harness for test report, use view's getLocalised
+    /**
+     * Initialise compilation unit by parsing file
+     * @return whether file parsing was successful
+     */
     private synchronized boolean initCompilationUnit() {
         try {
             // initialise model with compilation unit built from parsing the file
@@ -312,23 +440,36 @@ public class AuditController implements TreeSelectionListener {
         } catch (FileNotFoundException e) {
             return false;
         } catch (ParseProblemException ex) {
-
+            // get root frame
             final JFrame parent = (JFrame) SwingUtilities.getRoot(view);
-            final String message = view.getLocalised("parser_error"), desc = view.getLocalised("error_prompt");
-            int option = JOptionPane.showConfirmDialog(parent, desc, message, JOptionPane.YES_NO_OPTION, JOptionPane.ERROR_MESSAGE, loadIcon(ERROR_ICON));
 
-            if(option == JOptionPane.YES_OPTION) {
+            // get localised error message and description
+            final String message = view.getLocalised("parser_error"), desc = view.getLocalised("error_prompt");
+
+            // ask the user if they'd like to see the parser problems
+            int option = JOptionPane.showConfirmDialog(parent, desc, message, JOptionPane.YES_NO_OPTION,
+                    JOptionPane.ERROR_MESSAGE,
+                    loadIcon(ERROR_ICON));
+
+            // if they would like to see problems, show problem view
+            if (option == JOptionPane.YES_OPTION) {
+                // get problem(s) from exception
                 ArrayList<Problem> problems = new ArrayList<>(ex.getProblems());
+
+                // construct problem model with problems and relevant file
                 ParseProblemModel model = new ParseProblemModel(problems, this.model.getWorkingFile());
+
+                // show view
                 ParseProblemView view = new ParseProblemView(parent);
                 new ParseProblemController(model, view);
-
                 view.setVisible(true);
             }
 
+            // return failure
             return false;
         }
 
+        // if reached here, success
         return true;
     }
 
@@ -336,7 +477,7 @@ public class AuditController implements TreeSelectionListener {
      * Callback for method-tree selection event,
      * allows for method-tree to be a navigational component.
      *
-     * @param e event
+     * @param e selection event
      */
     @Override
     public void valueChanged(TreeSelectionEvent e) {
@@ -346,7 +487,6 @@ public class AuditController implements TreeSelectionListener {
 
         // return if null
         if (node == null) return;
-
 
         // if node represents a method, jump to beginning line (could possibly hit annotation)
         if (node instanceof MethodTreeNode) {

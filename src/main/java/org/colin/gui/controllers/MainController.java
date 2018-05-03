@@ -41,6 +41,8 @@ public class MainController implements FileReceiver, DropTargetListener {
      */
     public MainController(MainView view) {
         this.view = view;
+
+        // act as file receiver on behalf of view
         this.view.setFileReceiver(this);
 
         // initialise drop target to accept opening of files via drag-drop
@@ -70,6 +72,11 @@ public class MainController implements FileReceiver, DropTargetListener {
 
                 // initialise controller for model and view
                 AuditController controller = new AuditController(model, view);
+
+                if(model.hasError()) {
+                    break;
+                }
+
 
                 // local reference to view captured by anonymous class below
                 final MainView mainView = this.view;
@@ -108,8 +115,10 @@ public class MainController implements FileReceiver, DropTargetListener {
         }
     }
 
-
-
+    /**
+     * Drag enter event used for allowing files to be dropped for opening.
+     * @param event drag enter event
+     */
     @Override
     public void dragEnter(DropTargetDragEvent event) {
         // get transferable from drag event
@@ -152,6 +161,7 @@ public class MainController implements FileReceiver, DropTargetListener {
                     }
                 }
             } catch (UnsupportedFlavorException | IOException e) {
+                // reject drag if data flavour or IO exception occurs
                 event.rejectDrag();
             }
         }

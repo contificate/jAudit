@@ -23,7 +23,6 @@ public class LangSelectionController implements ActionListener {
      */
     private LangSelectionView view;
 
-
     /**
      * Create audit controller to cohere both model and view.
      *
