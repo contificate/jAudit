@@ -52,12 +52,12 @@ public class AuditSerializer implements JsonSerializer<AuditContext> {
 
             // transpose begin
             JsonArray first = new JsonArray();
-            first.add(begin.line - rootBegin.line);
+            first.add(begin.line);
             first.add(begin.column);
 
             // transpose end
             JsonArray last = new JsonArray();
-            last.add(end.line - rootEnd.line);
+            last.add(end.line);
             last.add(end.column);
 
             // add positions to child

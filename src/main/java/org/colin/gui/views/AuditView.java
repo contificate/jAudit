@@ -2,7 +2,6 @@ package org.colin.gui.views;
 
 import com.alee.extended.window.WebProgressDialog;
 import org.colin.gui.graph.AuditGraph;
-import org.colin.gui.graph.GraphView;
 import org.colin.gui.models.AuditModel;
 import org.colin.main.Main;
 import org.colin.res.IconLoader;
@@ -29,7 +28,8 @@ public class AuditView extends JPanel {
     private RSyntaxTextArea textArea;
     private WebProgressDialog progressDialog;
     private JTabbedPane toolTabs;
-    // private GraphView graphView;
+
+    private Gutter gutter;
 
     private AuditGraph graphView;
 
@@ -42,6 +42,7 @@ public class AuditView extends JPanel {
         this.model = model;
 
         initComponents();
+
     }
 
     private void initComponents() {
@@ -72,7 +73,7 @@ public class AuditView extends JPanel {
         // wrap textarea in scroll pane (enables line numbers)
         RTextScrollPane sp = new RTextScrollPane(textArea);
 
-        Gutter gutter = sp.getGutter();
+        gutter = sp.getGutter();
         gutter.setBookmarkIcon(IconLoader.loadIcon(ANNOTATION_ICON));
         gutter.setBookmarkingEnabled(true);
         gutter.setBackground(ColourUtil.fromHex("#f9f9f9"));
@@ -93,6 +94,10 @@ public class AuditView extends JPanel {
         progressDialog.getProgressBar().setString(rb.getString("parsing"));
 
         add(splitPane, BorderLayout.CENTER);
+    }
+
+    public Gutter getGutter() {
+        return gutter;
     }
 
     public void setTreeListener(TreeSelectionListener listener) {

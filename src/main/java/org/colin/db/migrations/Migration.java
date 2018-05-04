@@ -6,6 +6,10 @@ import org.colin.db.DBConnection;
  * Migrations allow for the easy creation and destruction of database schemas.
  */
 public abstract class Migration {
+
+    /**
+     * Database connection wrapper
+     */
     protected DBConnection connection;
 
     /**

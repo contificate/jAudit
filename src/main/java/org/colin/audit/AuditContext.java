@@ -1,8 +1,8 @@
 package org.colin.audit;
 
+import com.github.javaparser.Position;
 import com.github.javaparser.ast.Node;
-import com.sun.istack.internal.NotNull;
-import org.colin.gui.views.AuditView;
+import com.github.javaparser.utils.Pair;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
@@ -51,9 +51,21 @@ public class AuditContext implements Iterable<Node> {
         return nodes.iterator();
     }
 
+    /**
+     * Reduce current context by sublisting (overwrite current context)
+     *
+     * @param first first index
+     * @param last  last index
+     */
     public void sublist(int first, int last) {
         nodes = new ArrayList<>(nodes.subList(first, last));
-        // nodes = (ArrayList<Node>) nodes.subList(first, last);
+    }
+
+    public Pair<Integer, Integer> getLineRange() {
+        Position first = nodes.get(0).getBegin().orElse(Position.pos(0, 0)),
+                last = nodes.get(nodes.size() - 1).getBegin().orElse(Position.pos(0, 0));
+
+        return new Pair<>(first.line, last.line);
     }
 
 }

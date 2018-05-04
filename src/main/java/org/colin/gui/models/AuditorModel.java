@@ -10,6 +10,8 @@ public class AuditorModel {
 
     private DefaultListModel<ASTListElement> listModel;
     private AuditContext context;
+    private String auditJson;
+    private String comment;
 
     public AuditorModel(AuditContext context) {
         this.context = context;
@@ -21,6 +23,22 @@ public class AuditorModel {
 
         for(Node node : context)
             listModel.addElement(new ASTListElement(node));
+    }
+
+    public void setAuditJson(String auditJson) {
+        this.auditJson = auditJson;
+    }
+
+    public String getAuditJson() {
+        return auditJson;
+    }
+
+    public void setComment(String comment) {
+        this.comment = comment;
+    }
+
+    public String getComment() {
+        return comment;
     }
 
     public void reduceContext(int first, int last) {

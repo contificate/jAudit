@@ -18,18 +18,39 @@ public class AuditModel {
     private CompilationUnit unit;
     private long fileChecksum;
 
+    private int fileId;
+
+    private boolean error = false;
+
     public AuditModel(File file) {
         workingFile = file;
 
         // calculate file checksum
         try {
             fileChecksum = FileUtil.calculateCRC32(workingFile);
+            System.out.println(fileChecksum);
         } catch (IOException e) {
-            e.printStackTrace();
+            error = true;
         }
 
         // initialise root node of method tree model
         treeModel = new DefaultTreeModel(new ClassTreeNode(file.getName()));
+    }
+
+    public void setFileId(int fileId) {
+        this.fileId = fileId;
+    }
+
+    public int getFileId() {
+        return fileId;
+    }
+
+    public void setHasError(boolean error) {
+        this.error = error;
+    }
+
+    public boolean hasError() {
+        return error;
     }
 
     public File getWorkingFile() {
