@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title></title>
+	<link rel="stylesheet" type="text/css" href="main.css" />
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+	<script>
+		$(document).ready(() => {
+			$(".q .hdr").click(function() {
+				var parent = $(this).parent();
+				parent.find(".panel").slideToggle(220);
+				parent.toggleClass("active");
+			});
+		});
+	</script>
+</head>
+<body>
+	
+	<section id="content">
+		<div class="head">
+			<h1 class="title">jAudit</h1>
+			<p>Frequently Asked Questions</p>
+		</div>
+
+		<div class="questions">
+			
+			<div class="q">
+				<div class="hdr">What platforms does jAudit support?</div>
+				<div class="panel">Since jAudit is written in Java, it can run on any system that supports the JVM. Practically, this means Windows, Mac, and Linux can all run jAudit.</div>
+			</div>
+
+			<div class="q">
+				<div class="hdr">Can jAudit fully decompose AST nodes?</div>
+				<div class="panel">Currently, no. jAudit currently only works upon an overview of the AST. Thus, jAudit cannot infer specific contextual semantics relating to node decomposition. For example, jAudit doesn't differentiate between the two <pre>BlockStmt</pre>s for the two blocks of an if-else statement.</div>
+			</div>
+			<div class="q">
+				<div class="hdr">Can I export the AST depth visualisation?</div>
+				<div class="panel">Currently, no. However, such a feature could definitely be considered as it would be useful to include an SVG version in each audit report.</div>
+			</div>
+			<div class="q">
+				<div class="hdr">Can I change the style of the outputted audit report?</div>
+				<div class="panel">Yes, you can simply edit the internal CSS within the outputted HTML files. In future, it could be possible to select different themes from within jAudit and allow multiple audits outputted to the same folder to rely on one global stylesheet.</div>
+			</div>
+			<div class="q">
+				<div class="hdr">How can I use a persistent database file?</div>
+				<div class="panel">In order to stop jAudit prompting for a database upon startup, one can pass an absolute path as an argument to jAudit's .jar file. For example: <pre>java -jar jAudit.jar /path/to/jaudit.sqlite</pre></div>
+			</div>
+			<div class="q">
+				<div class="hdr">Does jAudit support languages other than English?</div>
+				<div class="panel">jAudit currently only supports English (en_GB) and German. An open source localisation effort could be possible in future though.</div>
+			</div>
+			<div class="q">
+				<div class="hdr">How much does jAudit cost?</div>
+				<div class="panel">jAudit is free and open-source software. If you paid for jAudit, demand a refund.</div>
+			</div>
+		</div>
+	</section>
+
+
+
+</body>
+</html>
